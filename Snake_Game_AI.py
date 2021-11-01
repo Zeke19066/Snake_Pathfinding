@@ -10,278 +10,226 @@ Try a HILBERT curve pathfinding algorithm
 
 '''
 import numpy as np
-from PIL import ImageGrab, Image, ImageOps
-import matplotlib.pyplot as plot
+import cv2
+import matplotlib.pyplot as plt
 import time
 from pynput.keyboard import Key, Controller
 from warnings import warn
 import heapq
 
-food = []
-head = []
-tail = [] #for simplicity, head will always be included in the tail list
-
-res_x = 300
-res_y = 300
-block_size = 10
-
-game_coords = [252, 251, 999, 998] # Where the game window is on the screen.
-new_path = False # This flag will trigger whenever the food has moved and we need to generate a new path.
-old_screen = [item for item in np.random.rand(3,2).flatten()]  #this will start with a dummy place holder that will be checked against the first screencap.
-screencheck = old_screen
-keyboard = Controller()
-start_time = time.time()
-game_over = False
-time.sleep(3) # make the program wait 3 seconds so you have a chance to click on the game window and make it active (for keyboard)
-next_coord = []
-first_move = True
-old_seconds = 0
 
 
 class SnekAI:
     def __init__(self):
-        self.gameLoop()
+        self.food = []
+        self.head = []
+        self.tail = [] #for simplicity, head will always be included in the tail list
+        self.path = []
+
+        self.start_time = time.time()
+        #time.sleep(3) # make the program wait 3 seconds so you have a chance to click on the game window and make it active (for keyboard)
+        self.next_coord = []
+        self.first_move = True
+
+    def switchboard(self, screen_array):
+        move = ""
+        self.screen_grid(screen_array)
+        #if len(self.path) <= 2:
+        self.path = self.astar_launcher()
+        if self.path != 0:
+            move = self.move_generator(self.path)
+        #self.path.pop(0) #cut down the path by 1
+        return move
 
     # This will generate a grayscale array at a resolution of 1block/pixel; will populate the head, tail, and food lists based on array.
-    def screen_grid(self):
-        global num_rows, num_cols, old_screen, new_path, food, head, tail, game_over, screencheck, block_size, res_x, res_y, first_move
-        #print(f'screen_grid() started')
-        game_over = False
-        first_move = False
-
-        while screencheck == old_screen: # If this snapshot does not  contain new information, wait and try again..
-            time.sleep(0.01)
-            raw_screen = ImageGrab.grab(bbox=game_coords)
-            snake_screencap_grayscale = ImageOps.grayscale(raw_screen) 
-            (width, height) = (int(res_x/block_size), int(res_y/block_size))
-            snake_screencap = snake_screencap_grayscale.resize((width, height), resample=0)
-            screen = np.array(snake_screencap)
-            #print(screen)
-            screencheck = [item for item in screen.flatten()]
-
-        if screencheck != old_screen: # If this snapshot contains new information....
-            old_screen = screencheck
-            num_rows, num_cols = screen.shape # a global variable tracking the number of rows and columns in the array.
-            
+    def screen_grid(self, screen):
+            screen = cv2.cvtColor(screen, cv2.COLOR_RGB2GRAY)
+            #plt.imshow(screen, cmap="gray")
+            #plt.show()
+            self.num_rows, self.num_cols = screen.shape # a global variable tracking the number of rows and columns in the array.
             #print(f'New Screen Detected, Analyzing')
             # Update head, tail, food with block coordinates.
-            for i, node in np.ndenumerate(screen):
-                coord = [int(n) for n in i] # Pesky tuples
-
-                if node == 0:
-                    if coord in tail:
-                        del tail[0]
-                if node == 102: # the food (red pixel) greyscale value.
-                    if coord != food:
-                        food = coord
-                        new_path = True
+            for coord, pixel in np.ndenumerate(screen):
+                coord = list(coord) # Pesky tuples
+                if pixel == 0:
+                    if coord in self.tail:
+                        i = self.tail.index(coord)
+                        del self.tail[i]
+                if pixel == 102: # the food (red pixel) greyscale value.
+                    if coord != self.food:
+                        self.food = coord
                         #print(f'NEW FOOD: {food}')
-                if node == 150: # the head & tail (green pixel) greyscale value.
-                    if coord not in tail:
-                        tail.append(coord)
-                        head = coord
+                if pixel == 150: # the head & tail (green pixel) greyscale value.
+                    if coord not in self.tail:
+                        self.tail.append(coord)
+                        self.head = coord
             if 150 not in screen.flatten(): # If the snake isn't on screen, the game is over.
                 print('GAME OVER')
-                game_over = True
-            elif 102 not in screen.flatten(): # Sometimes the food takes a sec to generate. This skips until we see new food.
-                #print(f'No Food! Pausing 1/100 sec & retest')
+            if 102 not in screen.flatten(): # Sometimes the food takes a sec to generate. This skips until we see new food.
                 time.sleep(0.01)
-                self.screen_grid()
-            #print(screen) # This line prints out the array.
-            #print(f'screen_grid() END, jumping to switchboard()')
-            self.switchboard()
-
+            return
 
     # Launch method to generate an A* path.
     def astar_launcher(self):
-        global next_coord, int_next_coord, old_seconds
         '''
         "1's" in the array will be interpreted as walls.
         '''
-        seconds = time.process_time() #let's track where we're losing time. This will not track sleep time.
-        maze = np.zeros((num_rows, num_cols), dtype= int)
-
-        # We put a 1 where the body lies.
-        for i, node in np.ndenumerate(maze):
-            int_i = [int(n) for n in i] # Pesky tuples
-            x,y = int_i[0], int_i[1]
-            if (int_i != head) and (int_i in tail):
-                maze[x][y] = 1  
-        start = tuple(head)#inputs must be tuples...
-        end = tuple(food) 
+        #we're not using the maze, but passing in a blank.
+        maze = np.zeros((self.num_rows, self.num_cols), dtype= int)
+        
+        #plt.imshow(maze, cmap='Greys')
+        #plt.show()
+        
+        start = tuple(self.head)#inputs must be tuples...
+        end = tuple(self.food) 
         #print(f'Launching astar() with the following args;   start:{start}  end:{end}')
-        print(maze)
-        path = astar(maze, start, end)
-        next_coord = path[1] #just the next move. Note the element in the set (path[0]) is the start position.
-        #print(f'A* path found; next coord is: {next_coord}')
-        int_next_coord = [int(n) for n in next_coord] # Pesky tuples
-        net_seconds = seconds - old_seconds
-        print(net_seconds)
-        old_seconds = seconds
-        return
-    # This is the switcboard for the pathfinding algorithm we execute.
-    def switchboard(self):
-        #print('Finding PATH...')
-        #if (len(tail)+1) < (num_rows or num_cols): # If tail length less than either height OR width, use A* Path
-        #print(f'A* PATH selected, jumping to astar_launcher()')
-        self.astar_launcher()
+        #print(maze)
+        path = self.astar(maze, start, end) #complete path to food. Note path[0] is the current head position.
 
-    # This is where we'll execute the move based on our pathfinding output.
-    def gameLoop(self):
-        global game_over, food, head, tail, next_coord, first_move, int_next_coord
-        print(f'____________________________________________________________starting gameLoop(); first move: {first_move}')
-        if first_move == True:
-            print('First Move!')
-            self.screen_grid()
+        return path
 
-        while not game_over:
-            #print(f'int_next_coord: {int_next_coord};   head:{head}')
+    def astar(self, maze, start, end, allow_diagonal_movement = False):
+        """
+        Returns a list of tuples as a path from the given start to the given end in the given maze
+        :param maze:
+        :param start:
+        :param end:
+        :return:
+        """
+        def return_path(current_node):
+            path = []
+            current = current_node
+            while current is not None:
+                path.append(current.position)
+                current = current.parent
+            return path[::-1]  # Return reversed path
 
-            if head[0] < int_next_coord[0]: # Move Down
-                #print('Pseudo Down')
-                keyboard.press(Key.down)
-                time.sleep(0.1)
-                keyboard.release(Key.down)
-                self.screen_grid()
-            if head[0] > int_next_coord[0]: # Move Up
-                #print('Pseudo Up')
-                keyboard.press(Key.up)
-                time.sleep(0.1)
-                keyboard.release(Key.up)
-                self.screen_grid()
+        # Create start and end node
+        start_node = Node(None, start)
+        start_node.g = start_node.h = start_node.f = 0
+        end_node = Node(None, end)
+        end_node.g = end_node.h = end_node.f = 0
+
+        # Initialize both open and closed list
+        open_list = []
+        closed_list = []
+
+        max_len = 0
+        max_len_node = []
+
+        # Heapify the open_list and Add the start node
+        heapq.heapify(open_list) 
+        heapq.heappush(open_list, start_node)
+
+        # Adding a stop condition
+        outer_iterations = 0
+
+        #max_iterations = (len(maze[0]) * len(maze) * 10)
+        #max_iterations = (len(maze[0]) * len(maze) // 2)
+        #max_iterations = (len(maze[0]) * len(maze))
+        #max_iterations = (len(maze[0]) * len(maze[1]))
+        max_iterations = 100
+
+        # what squares do we search
+        adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0))
+        if allow_diagonal_movement:
+            adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1),)
+
+        # Loop until you find the end
+        while len(open_list) > 0:
+            outer_iterations += 1
+            if outer_iterations % 1000 == 0:
+                print(f"Search Cycle: {outer_iterations}")
+            #print(outer_iterations)
+
+            #failed to find a path
+            if outer_iterations > max_iterations:
+                #warn("giving up on pathfinding too many iterations")
+                print("giving up on pathfinding too many iterations; Max Len Path chosen")
+                return return_path(max_len_node)
             
-            if head[0] == int_next_coord[0]: # Let's take a lateral move.
-                if head[1] < int_next_coord[1]: # Move Right
-                    #print('Pseudo Right')
-                    keyboard.press(Key.right)
-                    time.sleep(0.1)
-                    keyboard.release(Key.right)
-                    self.screen_grid()
-                if head[1] > int_next_coord[1]: # Move Left
-                    #print('Pseudo Left')
-                    keyboard.press(Key.left)
-                    time.sleep(0.1)
-                    keyboard.release(Key.left)
-                    self.screen_grid()
+            # Get the current node
+            current_node = heapq.heappop(open_list)
+            closed_list.append(current_node)
 
-            if (head[0] == int_next_coord[0]) and (head[1] == int_next_coord[1]):# Let's take a lateral move.
-                print('Something went wrong in the game loop! Or its a new game?')
-                self.screen_grid()
-            # Exit Sequence
-        if game_over == True:
-            food, head, tail = [], [], [] # We're resetting everything.
-            time.sleep(2)
-            keyboard.press(Key.space)
-            time.sleep(0.35)
-            keyboard.release(Key.space)
-            print('GAME OVER RESET')
-            game_over = False
-            self.screen_grid()
+            # We're tracking longest failed path for contingency
+            if len(closed_list) > max_len:
+                max_len = len(closed_list)
+                max_len_node = current_node
 
+            # Found the goal
+            if current_node == end_node:
+                return return_path(current_node)
 
-def return_path(current_node):
-    path = []
-    current = current_node
-    while current is not None:
-        path.append(current.position)
-        current = current.parent
-    return path[::-1]  # Return reversed path
+    
+            # Generate children
+            children = []
+            
+            for new_position in adjacent_squares: # Adjacent squares
 
-def astar(maze, start, end, allow_diagonal_movement = False):
-    """
-    Returns a list of tuples as a path from the given start to the given end in the given maze
-    :param maze:
-    :param start:
-    :param end:
-    :return:
-    """
+                # Get node position
+                node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
 
-    # Create start and end node
-    start_node = Node(None, start)
-    start_node.g = start_node.h = start_node.f = 0
-    end_node = Node(None, end)
-    end_node.g = end_node.h = end_node.f = 0
+                # Make sure within range
+                if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
+                    continue
 
-    # Initialize both open and closed list
-    open_list = []
-    closed_list = []
+                """
+                # Make sure walkable terrain
+                if maze[node_position[0]][node_position[1]] != 0:
+                    continue
+                """
 
-    # Heapify the open_list and Add the start node
-    heapq.heapify(open_list) 
-    heapq.heappush(open_list, start_node)
+                if list(node_position) in self.tail:
+                    continue
 
-    # Adding a stop condition
-    outer_iterations = 0
-    #max_iterations = (len(maze[0]) * len(maze) // 2)
-    max_iterations = (len(maze[0]) * len(maze) * 10)
+                # Create new node
+                new_node = Node(current_node, node_position)
 
-    # what squares do we search
-    adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0),)
-    if allow_diagonal_movement:
-        adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1),)
+                # Append
+                children.append(new_node)
 
-    # Loop until you find the end
-    while len(open_list) > 0:
-        outer_iterations += 1
-        print(outer_iterations)
+            # Loop through children
+            for child in children:
+                # Child is on the closed list
+                if len([closed_child for closed_child in closed_list if closed_child == child]) > 0:
+                    continue
 
+                # Create the f, g, and h values
+                child.g = current_node.g + 1
+                child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
+                child.f = child.g + child.h
 
-        if outer_iterations > max_iterations:
-            # if we hit this point return the path such as it is
-            # it will not contain the destination
-            warn("giving up on pathfinding too many iterations")
-            return return_path(current_node)       
-        
-        # Get the current node
-        current_node = heapq.heappop(open_list)
-        closed_list.append(current_node)
+                # Child is already in the open list
+                if len([open_node for open_node in open_list if child.position == open_node.position and child.g > open_node.g]) > 0:
+                    continue
 
-        # Found the goal
-        if current_node == end_node:
-            return return_path(current_node)
+                # Add the child to the open list
+                heapq.heappush(open_list, child)
 
-        # Generate children
-        children = []
-        
-        for new_position in adjacent_squares: # Adjacent squares
+        warn("Couldn't get a path to destination")
+        return 0
 
-            # Get node position
-            node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
+    def move_generator(self, path):
+            head_coord = list(path[0])
+            move_coord = list(path[1])
+            move = ""
 
-            # Make sure within range
-            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
-                continue
+            if head_coord[0] != move_coord[0]: #+left/-right
+                delta = head_coord[0] - move_coord[0] #+left/-right
+                if delta > 0:
+                    move = "Left"
+                elif delta < 0:
+                    move = "Right"
 
-            # Make sure walkable terrain
-            if maze[node_position[0]][node_position[1]] != 0:
-                continue
-
-            # Create new node
-            new_node = Node(current_node, node_position)
-
-            # Append
-            children.append(new_node)
-
-        # Loop through children
-        for child in children:
-            # Child is on the closed list
-            if len([closed_child for closed_child in closed_list if closed_child == child]) > 0:
-                continue
-
-            # Create the f, g, and h values
-            child.g = current_node.g + 1
-            child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
-            child.f = child.g + child.h
-
-            # Child is already in the open list
-            if len([open_node for open_node in open_list if child.position == open_node.position and child.g > open_node.g]) > 0:
-                continue
-
-            # Add the child to the open list
-            heapq.heappush(open_list, child)
-
-    warn("Couldn't get a path to destination")
-    return None
+            elif head_coord[1] != move_coord[1]: #+up/-down
+                delta = head_coord[1] - move_coord[1] #+up/-down
+                if delta > 0:
+                    move = "Up"
+                elif delta < 0:
+                    move = "Down"
+            #print(head_coord, move_coord, delta)
+            return move
 
 class Node:
     """
@@ -310,5 +258,9 @@ class Node:
     def __gt__(self, other):
       return self.f > other.f
 
-snek = SnekAI()
-snek
+def main():
+    snek = SnekAI()
+    snek.game_loop()
+
+if __name__ == "__main__":
+    main()

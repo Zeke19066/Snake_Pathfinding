@@ -1,36 +1,28 @@
-'''
-https://github.com/PrincetonLIPS/numpy-hilbert-curve/blob/3568b109299185dc5bb4b885f9c7dd7264080997/examples/draw_2d.py
-'''
-import numpy             as np
-import matplotlib.pyplot as plt
+import pygame
+screen_width, screen_height = 20, 20
 
-from hilbert import decode
+scaling_factor = 6
 
-num_dims = 2
+x, y = 10, 10
+rect_width, rect_height = 2, 2
+vel = 2
+black = (0, 0, 0)
+white = (255, 255, 255)
+pygame.init()
+win = pygame.display.set_mode((screen_width*scaling_factor, screen_height*scaling_factor))
 
-def draw_curve(ax, num_bits):
+screen = pygame.Surface((screen_width, screen_height))
 
-  # The maximum Hilbert integer.
-  max_h = 2**(num_bits*num_dims)
+run = True
+while run:
+    pygame.time.delay(100)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
 
-  # Generate a sequence of Hilbert integers.
-  hilberts = np.arange(max_h)
+    screen.fill(black)
+    pygame.draw.rect(screen, white, (x, y, rect_width, rect_height))
 
-  # Compute the 2-dimensional locations.
-  locs = decode(hilberts, num_dims, num_bits)
-  print(locs)
-
-  # Draw
-  ax.plot(locs[:,0], locs[:,1], '.-')
-  ax.set_aspect('equal')
-  ax.set_title('%d bits per dimension' % (num_bits))
-  ax.set_xlabel('dim 1')
-  ax.set_ylabel('dim 2')
-
-
-fig = plt.figure(figsize=(16,4))
-for ii, num_bits in enumerate([2, 3, 4, 5]):
-  ax = fig.add_subplot(1,4,ii+1)
-  draw_curve(ax, num_bits)
-plt.savefig('example_2d.png', bbox_inches='tight')
-plt.show()
+    win.blit(pygame.transform.scale(screen, win.get_rect().size), (0, 0))
+    pygame.display.update()
+pygame.quit()
