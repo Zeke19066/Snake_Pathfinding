@@ -16,9 +16,9 @@ class SnakeGame():
         print('Game Initialized!')
         self.ai_control = True #no human control.
         self.ai = AI.SnekAI()
-        self.resolution_width = 100
-        self.resolution_height = 50
-        self.pixel_size = 10
+        self.resolution_width = 300
+        self.resolution_height = 200
+        self.pixel_size = 1
         self.snake_speed = 500
         self.final_speed = 0
         self.game_close = False
