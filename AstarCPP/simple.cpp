@@ -4,15 +4,16 @@
 #include <string>
 using namespace std;
 
-// Creating a shortcut for int, int pair type
-typedef pair<int, int> Pair;
-
-// Creating a shortcut for pair<int, pair<int, int>> type
-typedef pair<double, pair<int, int> > pPair;
-
 
 class AStar {
-  public:
+private:
+	// Creating a shortcut for int, int pair type
+	typedef pair<int, int> Pair;
+
+	// Creating a shortcut for pair<int, pair<int, int>> type
+	typedef pair<double, pair<int, int> > pPair;
+
+
 
 	// A structure to hold the necessary parameters
 	struct cell {
@@ -126,6 +127,7 @@ class AStar {
 	// A Function to find the shortest path between
 	// a given source cell to a destination cell according
 	// to A* Search Algorithm
+public:
 	string aStarSearch(int master_row, int master_col, vector<vector<int>> forbidden_vector, Pair src, Pair dest)
 	{
 		string move;
@@ -453,23 +455,42 @@ class AStar {
 };
 
 // Driver program to test above function
-int main()
+string launcher(int row, int col, vector<vector<int>> forbidden_vector, int start_arr[2], int finish_arr[2])
 {
+	// Creating a shortcut for int, int pair type
+	typedef pair<int, int> Pair;
+
+	// Creating a shortcut for pair<int, pair<int, int>> type
+	typedef pair<double, pair<int, int> > pPair;
 	
 	// Source is the left-most bottom-most corner
-	Pair start = make_pair(8, 8);
+	Pair start = make_pair(start_arr[0], start_arr[1]);
 
 	// Destination is the left-most top-most corner
-	Pair finish = make_pair(0, 0);
-
+	Pair finish = make_pair(finish_arr[0], finish_arr[1]);
 
     // Declare an object of class geeks
     AStar AIObj;
 
-	    // input array
+    // accessing member function
+	printf("Starting Search\n");
+	string first_move;
+	first_move = AIObj.aStarSearch(row, col, forbidden_vector, start, finish);
 
-    vector<vector<int>> forbidden_vector
-    {       { 5, 0 },
+	return first_move;
+}
+
+
+int main()
+{
+	int col = 10;
+	int row = 9;
+
+	int start[2] = {8,8};
+	int finish[2] = {0,0};
+
+	vector<vector<int>> forbidden_vector
+	{       { 5, 0 },
 			{ 5, 1 },
 			{ 5, 2 },
 			{ 5, 3 },
@@ -477,15 +498,11 @@ int main()
 			{ 5, 6 },
 			{ 5, 7 },
 			{ 5, 8 } };
- 
-	int col = 10;
-	int row = 9;
 
-    // accessing member function
-	printf("Starting Search\n");
-	string first_move;
-	first_move = AIObj.aStarSearch(row, col, forbidden_vector, start, finish);
-	printf("-> (%s) ", first_move.c_str());
+	string the_move;
 
+	the_move = launcher(row, col, forbidden_vector, start, finish);
+
+	printf("-> (%s) ", the_move.c_str());
 	return (0);
-}
+};

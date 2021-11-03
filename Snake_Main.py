@@ -25,12 +25,13 @@ class SnakeGame():
     def __init__(self):
         print('Game Initialized!')
         self.ai_control = True #no human control.
-        self.ai_players = 1 #how many snek?
+        self.ai_players = 3 #how many snek?
+        self.death_count = 0 #how many ded snek?
 
-        self.resolution_width = 100
-        self.resolution_height = 50
-        self.pixel_size = 10
-        self.snake_speed = 100
+        self.resolution_width = 50
+        self.resolution_height = 25
+        self.pixel_size = 20
+        self.snake_speed = 1000
         self.final_speed = 0
         self.game_close = False
 
@@ -54,19 +55,12 @@ class SnakeGame():
 
         self.color_dict={
             "white": (255, 255, 255),
-            "yellow": (255, 255, 102),
+            "yellow": (255, 200, 50),#(255, 255, 102),
             "black": (0, 0, 0),
             "red": (213, 50, 80),
             "green": (0, 255, 0),
             "blue": (50, 153, 213),
             }
-
-        self.player_1 = Snek_Actor(self.color_dict["green"], 1, self.resolution_width, self.resolution_height)
-        if self.ai_players == 2:
-            self.player_2 = Snek_Actor(self.color_dict["blue"], 2, self.resolution_width, self.resolution_height)
-        if self.ai_players == 3:
-            self.player_2 = Snek_Actor(self.color_dict["blue"], 2, self.resolution_width, self.resolution_height)
-            self.player_3 = Snek_Actor(self.color_dict["yellow"], 3, self.resolution_width, self.resolution_height)
 
    
     def score_generator(self, score):
@@ -114,21 +108,27 @@ class SnakeGame():
             self.snake_plotter(self.player_2)
             self.snake_plotter(self.player_3)
 
-
-
     def gameLoop(self):
         speed_mod = 0 # Speed adjustments made after the game has started.
         terminal_bool = False
+        self.player_1 = Snek_Actor(self.color_dict["green"], 1, self.resolution_width+1, self.resolution_height+1)
+        if self.ai_players == 2:
+            self.player_2 = Snek_Actor(self.color_dict["blue"], 2, self.resolution_width+1, self.resolution_height+1)
+        if self.ai_players == 3:
+            self.player_2 = Snek_Actor(self.color_dict["blue"], 2, self.resolution_width+1, self.resolution_height+1)
+            self.player_3 = Snek_Actor(self.color_dict["yellow"], 3, self.resolution_width+1, self.resolution_height+1)
         self.food_generator() #this is when we request the starting food.
+
 
         while not terminal_bool:
             food_bool = False
+            dead_count = 0
 
             # Exit Sequence
             if self.game_close == True:
                 self.screen.fill(self.color_dict["black"])
                 self.message("Press Space or Esc", self.color_dict["white"])
-                self.score_generator(snake_length - 1)
+                #self.score_generator(snake_length - 1)
                 self.dis.blit(pygame.transform.scale(self.screen, self.dis.get_rect().size), (0, 0))
                 pygame.display.update()
                 self.lose_count += 1
@@ -136,7 +136,7 @@ class SnakeGame():
                 self.food_game_count = 0
                 while self.game_close == True:
                     if self.ai_control:
-                        time.sleep(1)
+                        #time.sleep(1)
                         self.game_close = False
                         self.gameLoop()
 
@@ -180,23 +180,28 @@ class SnakeGame():
 
                 forbidden_path = self.forbidden_builder("Path", player=1)
                 food_bool = self.player_1.snek_step(forbidden_path)
+                dead_count += self.player_1.dead_bool
                 if food_bool:#trigger the new food condition
                     self.food_generator()  # We generate the next food before updating the screen.
                 
                 if self.ai_players == 2:
                     forbidden_path = self.forbidden_builder("Path", player=2)
                     food_bool = self.player_2.snek_step(forbidden_path)
+                    dead_count += self.player_1.dead_bool
                     if food_bool:#trigger the new food condition
                         self.food_generator()  # We generate the next food before updating the screen.
                 if self.ai_players == 3:
                     forbidden_path = self.forbidden_builder("Path", player=2)
                     food_bool = self.player_2.snek_step(forbidden_path)
+                    dead_count += self.player_1.dead_bool
                     if food_bool:#trigger the new food condition
                         self.food_generator()  # We generate the next food before updating the screen.
                     forbidden_path = self.forbidden_builder("Path", player=3)
                     food_bool = self.player_3.snek_step(forbidden_path)
+                    dead_count += self.player_1.dead_bool
                     if food_bool:#trigger the new food condition
                         self.food_generator()  # We generate the next food before updating the screen.
+
 
                 
             self.screen.fill(self.color_dict["black"])
@@ -209,6 +214,10 @@ class SnakeGame():
             if self.ai_players == 3:
                 self.snake_plotter(self.player_2)
                 self.snake_plotter(self.player_3)
+
+            if dead_count == self.ai_players: #All snek ded
+                    time.sleep(3) #bask in the snek
+                    self.game_close = True
 
             #self.score_generator(snake_length - 1)
             self.dis.blit(pygame.transform.scale(self.screen, self.dis.get_rect().size), (0, 0))
@@ -273,6 +282,7 @@ class Snek_Actor():
         self.y1 = np.random.randint(1,self.resolution_height)
         self.x1_change = 0
         self.y1_change = 0
+        self.last_action = "Left"
 
         self.food = [] #this will be overwritten each time food is spawned.
         self.snek_length = 0 #Note!!!! doesnt count the head!
@@ -293,14 +303,16 @@ class Snek_Actor():
             return food_bool
 
         if forbidden_path == []:
-            forbidden_path = [[-1,-1]]
-
+            forbidden_path = [[0,0]]
 
         #reverse the head & food.[::-1]
         action = Custom_A_Star.launcher(self.resolution_height, self.resolution_width,
                                     forbidden_path, self.head, self.food)
 
-        #print(f"{action}  Head:{self.head}   Food:{self.food}  {forbidden_path}")
+        if len(action) > 6:
+            #print(f"{self.player_num}  {action}  Head:{self.head}   Food:{self.food}  {forbidden_path}")
+            action = self.last_action
+
 
         if action == "Left":
             x1_change = -1
@@ -321,13 +333,17 @@ class Snek_Actor():
 
         #apply the modification to head position.
         self.head[1] += x1_change
-        if self.head[1] not in range(0, self.resolution_width+1):
-            self.dead_bool = True
-            self.color = (255, 255, 255) #ghost
         self.head[0] += y1_change
-        if self.head[0] not in range(0, self.resolution_height+1):
+        if self.head[1] not in range(0, self.resolution_width-1):
             self.dead_bool = True
             self.color = (255, 255, 255) #ghost
+            self.head = self.body[0] #reset to last head that is in-bounds
+            return food_bool
+        if self.head[0] not in range(0, self.resolution_height-1):
+            self.dead_bool = True
+            self.color = (255, 255, 255) #ghost
+            self.head = self.body[0] #reset to last head that is in-bounds
+            return food_bool
 
         #we got the food; snek gets longer
         if self.head == self.food:
@@ -337,7 +353,8 @@ class Snek_Actor():
             self.body = deque(temp, maxlen=self.snek_length)
 
         self.full_snek = list(self.body.copy()) #a combination of body and head.
-        self.full_snek.append(self.head)
+        self.full_snek.append(self.head.copy())
+        self.last_action = action
 
         return food_bool
 
