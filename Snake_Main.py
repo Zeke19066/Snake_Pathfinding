@@ -30,7 +30,7 @@ class SnakeGame():
 
         self.resolution_width = round(3840/80)
         self.resolution_height = round(2160/80)
-        self.pixel_size = 22
+        self.pixel_size = 25
         self.snake_speed = 1000
         self.final_speed = 0
         self.game_close = False
@@ -177,7 +177,6 @@ class SnakeGame():
                 
             #process ai control
             if self.ai_control and (self.cycle!=1):
-
                 forbidden_path = self.forbidden_builder("Path", player=1)
                 food_bool = self.player_1.snek_step(forbidden_path)
                 dead_count += self.player_1.dead_bool
@@ -275,7 +274,7 @@ class Snek_Actor():
         self.resolution_height = resolution_height
         self.resolution_width = resolution_width
         self.dead_bool = False
-        self.ai = AI.SnekAI()
+        self.py_ai = AI.SnekAI()
 
         self.x1 = np.random.randint(1,self.resolution_width-1)
         self.y1 = np.random.randint(1,self.resolution_height-1)
@@ -304,14 +303,16 @@ class Snek_Actor():
         if forbidden_path == []:
             forbidden_path = [[0,0]]
 
-        #reverse the head & food.[::-1]
-        action = Custom_A_Star.launcher(self.resolution_height, self.resolution_width,
+        #action = Custom_A_Star.launcher(self.resolution_height, self.resolution_width,
+        #                            forbidden_path, self.head, self.food)
+
+        action =self.py_ai.switchboard(self.resolution_height, self.resolution_width,
                                     forbidden_path, self.head, self.food)
 
         if len(action) > 6:
-            print(f"{self.player_num}  {action}  Head:{self.head}   Food:{self.food}  {forbidden_path}")
+            #print(f"{self.player_num}  {action}  Head:{self.head}   Food:{self.food}  {forbidden_path}")
+            #print(action)
             action = self.last_action
-
 
         if action == "Left":
             x1_change = -1
@@ -336,17 +337,29 @@ class Snek_Actor():
         if self.head[1] not in range(0, self.resolution_width):
             self.dead_bool = True
             self.color = (150, 150, 150) #ghost
-            self.head = self.body[0] #reset to last head that is in-bounds
+            if len(self.body)>0:
+                self.head = self.body[0] #reset to last head that is in-bounds
+            elif len(self.body)==0:
+                self.head[1] -= x1_change
+                self.head[0] -= y1_change
             return food_bool
         if self.head[0] not in range(0, self.resolution_height):
             self.dead_bool = True
             self.color = (150, 150, 150) #ghost
-            self.head = self.body[0] #reset to last head that is in-bounds
+            if len(self.body)>0:
+                self.head = self.body[0] #reset to last head that is in-bounds
+            elif len(self.body)==0:
+                self.head[1] -= x1_change
+                self.head[0] -= y1_change
             return food_bool
         if self.head in forbidden_path:
             self.dead_bool = True
             self.color = (150, 150, 150) #ghost
-            self.head = self.body[0] #reset to last head that is in-bounds
+            if len(self.body)>0:
+                self.head = self.body[0] #reset to last head that is in-bounds
+            elif len(self.body)==0:
+                self.head[1] -= x1_change
+                self.head[0] -= y1_change
             return food_bool
 
 

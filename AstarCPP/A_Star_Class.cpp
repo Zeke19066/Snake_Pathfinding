@@ -250,14 +250,15 @@ public:
 			N --> North	 (i-1, j)
 			S --> South	 (i+1, j)
 			E --> East	 (i, j+1)
-			W --> West		 (i, j-1)
-			N.E--> North-East (i-1, j+1)
-			N.W--> North-West (i-1, j-1)
-			S.E--> South-East (i+1, j+1)
-			S.W--> South-West (i+1, j-1)*/
+			W --> West	(i, j-1)
+			*/
 
 			// To store the 'g', 'h' and 'f' of the 8 successors
 			double gNew, hNew, fNew;
+
+
+			longest_length++;
+
 
 			//----------- 1st Successor (North) ------------
 

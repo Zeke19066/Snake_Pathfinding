@@ -17,8 +17,6 @@ from pynput.keyboard import Key, Controller
 from warnings import warn
 import heapq
 
-
-
 class SnekAI:
     def __init__(self):
         self.food = []
@@ -26,66 +24,37 @@ class SnekAI:
         self.tail = [] #for simplicity, head will always be included in the tail list
         self.path = []
 
-        self.start_time = time.time()
-        #time.sleep(3) # make the program wait 3 seconds so you have a chance to click on the game window and make it active (for keyboard)
-        self.next_coord = []
-        self.first_move = True
 
-    def switchboard(self, screen_array):
-        move = ""
-        self.screen_grid(screen_array)
+    def switchboard(self, res_y, res_x, forbidden_path, head, food):
+        move = "Couldn't get a path to destination"
         #if len(self.path) <= 2:
-        self.path = self.astar_launcher()
+        self.path = self.astar_launcher(res_y, res_x, forbidden_path, head, food)
         if self.path != 0:
             move = self.move_generator(self.path)
         #self.path.pop(0) #cut down the path by 1
         return move
 
-    # This will generate a grayscale array at a resolution of 1block/pixel; will populate the head, tail, and food lists based on array.
-    def screen_grid(self, screen):
-            screen = cv2.cvtColor(screen, cv2.COLOR_RGB2GRAY)
-            #plt.imshow(screen, cmap="gray")
-            #plt.show()
-            self.num_rows, self.num_cols = screen.shape # a global variable tracking the number of rows and columns in the array.
-            #print(f'New Screen Detected, Analyzing')
-            # Update head, tail, food with block coordinates.
-            for coord, pixel in np.ndenumerate(screen):
-                coord = list(coord) # Pesky tuples
-                if pixel == 0:
-                    if coord in self.tail:
-                        i = self.tail.index(coord)
-                        del self.tail[i]
-                if pixel == 102: # the food (red pixel) greyscale value.
-                    if coord != self.food:
-                        self.food = coord
-                        #print(f'NEW FOOD: {food}')
-                if pixel == 150: # the head & tail (green pixel) greyscale value.
-                    if coord not in self.tail:
-                        self.tail.append(coord)
-                        self.head = coord
-            if 150 not in screen.flatten(): # If the snake isn't on screen, the game is over.
-                print('GAME OVER')
-            if 102 not in screen.flatten(): # Sometimes the food takes a sec to generate. This skips until we see new food.
-                time.sleep(0.01)
-            return
-
     # Launch method to generate an A* path.
-    def astar_launcher(self):
+    def astar_launcher(self, res_y, res_x, forbidden_path, head, food):
         '''
         "1's" in the array will be interpreted as walls.
         '''
         #we're not using the maze, but passing in a blank.
-        maze = np.zeros((self.num_rows, self.num_cols), dtype= int)
-        
+        forbidden_path = np.array(forbidden_path)
+
+        #create a maze with walls set to 1.
+        maze = np.zeros((res_y, res_x), dtype= int)
+        for val in forbidden_path:
+            maze[val[0]][val[1]] = 1
+
         #plt.imshow(maze, cmap='Greys')
         #plt.show()
         
-        start = tuple(self.head)#inputs must be tuples...
-        end = tuple(self.food) 
+        start = tuple(head)#inputs must be tuples...
+        end = tuple(food) 
         #print(f'Launching astar() with the following args;   start:{start}  end:{end}')
         #print(maze)
         path = self.astar(maze, start, end) #complete path to food. Note path[0] is the current head position.
-
         return path
 
     def astar(self, maze, start, end, allow_diagonal_movement = False):
@@ -128,8 +97,7 @@ class SnekAI:
         #max_iterations = (len(maze[0]) * len(maze) // 2)
         #max_iterations = (len(maze[0]) * len(maze))
         #max_iterations = (len(maze[0]) * len(maze[1]))
-        max_iterations = 100
-
+        max_iterations = 5000
         # what squares do we search
         adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0))
         if allow_diagonal_movement:
@@ -145,7 +113,7 @@ class SnekAI:
             #failed to find a path
             if outer_iterations > max_iterations:
                 #warn("giving up on pathfinding too many iterations")
-                print("giving up on pathfinding too many iterations; Max Len Path chosen")
+                #print("giving up on pathfinding too many iterations; Max Len Path chosen")
                 return return_path(max_len_node)
             
             # Get the current node
@@ -161,7 +129,6 @@ class SnekAI:
             if current_node == end_node:
                 return return_path(current_node)
 
-    
             # Generate children
             children = []
             
@@ -174,13 +141,8 @@ class SnekAI:
                 if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
                     continue
 
-                """
                 # Make sure walkable terrain
-                if maze[node_position[0]][node_position[1]] != 0:
-                    continue
-                """
-
-                if list(node_position) in self.tail:
+                if maze[node_position[0]][node_position[1]] == 1:
                     continue
 
                 # Create new node
@@ -207,23 +169,24 @@ class SnekAI:
                 # Add the child to the open list
                 heapq.heappush(open_list, child)
 
-        warn("Couldn't get a path to destination")
+        #warn("Couldn't get a path to destination")
         return 0
 
     def move_generator(self, path):
             head_coord = list(path[0])
             move_coord = list(path[1])
             move = ""
+            x,y = 1,0
 
-            if head_coord[0] != move_coord[0]: #+left/-right
-                delta = head_coord[0] - move_coord[0] #+left/-right
+            if head_coord[x] != move_coord[x]: #+left/-right
+                delta = head_coord[x] - move_coord[x] #+left/-right
                 if delta > 0:
                     move = "Left"
                 elif delta < 0:
                     move = "Right"
 
-            elif head_coord[1] != move_coord[1]: #+up/-down
-                delta = head_coord[1] - move_coord[1] #+up/-down
+            elif head_coord[y] != move_coord[y]: #+up/-down
+                delta = head_coord[y] - move_coord[y] #+up/-down
                 if delta > 0:
                     move = "Up"
                 elif delta < 0:
