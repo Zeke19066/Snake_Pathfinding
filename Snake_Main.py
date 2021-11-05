@@ -17,6 +17,7 @@ import numpy as np
 import time
 import os
 import Snake_AI
+import random
 from collections import deque
 
 class SnakeGame():
@@ -42,8 +43,8 @@ class SnakeGame():
         self.lose_count = 0 #how many times have we lost?
         self.cycle = 1
 
-        x, y = 100, 100
-        os.environ['SDL_VIDEO_WINDOW_POS'] = f"{x},{y}" # This is how we set the window position on the screen. Must come before pygame init.
+        os.environ['SDL_VIDEO_WINDOW_POS'] = f"{100},{100}" # This is how we set the window position on the screen. Must come before pygame init.
+        
         pygame.init()
         self.dis = pygame.display.set_mode((self.res_x*self.pixel_size, self.res_y*self.pixel_size))
         #self.dis = pygame.display.set_mode((self.res_x*self.pixel_size, self.res_y*self.pixel_size), pygame.FULLSCREEN)
@@ -144,6 +145,7 @@ class SnakeGame():
         snake_colors = [self.color_dict["green"],self.color_dict["soft_blue"],self.color_dict["orange"], 
                     self.color_dict["purple"], self.color_dict["pink"], self.color_dict["yellow"]
                     ]
+        random.shuffle(snake_colors)
         """
         snake_colors = []
         for _ in range(self.ai_players):
