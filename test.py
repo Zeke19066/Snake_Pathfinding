@@ -1,4 +1,10 @@
-lst = [{'price': 99, 'barcode': '2342355'}, {'price': 88, 'barcode': '2345566'}]
+people = [
+{'name': "Tom", 'age': 10},
+{'name': "Mark", 'age': 5},
+{'name': "Pam", 'age': 7}
+]
 
-maxPricedItem = max(lst, key=lambda x:x['price'])
-minPricedItem = min(lst, key=lambda x:x['price'])
+b = list(filter(lambda person: person['name'] == 'Pam', people))
+
+if b != []:
+    print(b)

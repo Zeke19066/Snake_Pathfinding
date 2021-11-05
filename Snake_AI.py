@@ -10,6 +10,7 @@ Try a HILBERT curve pathfinding algorithm
 
 '''
 import numpy as np
+from math import sqrt
 #import matplotlib.pyplot as plt
 #from warnings import warn
 #import heapq
@@ -17,8 +18,9 @@ import numpy as np
 #import multiprocessing
 
 class SnekAI:
-    def __init__(self):
+    def __init__(self, f_mode=3):
         self.path = []
+        self.f_mode = f_mode
 
     def switchboard(self, res_y, res_x, forbidden_path, head, food):
         move = "Couldn't get a path to destination"
@@ -64,8 +66,7 @@ class SnekAI:
         return path
 
     def astar_local(self, maze, start, end, allow_diagonal_movement = False):
-        """
-        """
+
         def return_path(current_node):
             path = []
             current = current_node
@@ -88,7 +89,6 @@ class SnekAI:
         end_node = node_template.copy()
         end_node["position"] = end
 
-
         res_y, res_x = maze.shape[0], maze.shape[1]
 
         # Initialize both open and closed list
@@ -102,14 +102,12 @@ class SnekAI:
 
         # Adding a stop condition
         outer_iterations = 0
-        #max_iterations = (len(maze[0]) * len(maze) * 10)
-        #max_iterations = (len(maze[0]) * len(maze) // 2)
-        #max_iterations = (len(maze[0]) * len(maze))
-        #max_iterations = (len(maze[0]) * len(maze[1]))
-        max_iterations = 100
+        max_iterations = 175
+        if self.f_mode == 2:
+            max_iterations = 100 #Since Sqrt is slow.
 
         # what squares do we search
-        adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0))
+        adjacent_squares = ((-1, 0), (1, 0), (0, 1), (0, -1))
         if allow_diagonal_movement:
             adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1),)
 
@@ -120,22 +118,16 @@ class SnekAI:
                 print(f"Search Cycle: {outer_iterations}")
 
             #failed to find a path
-
             if outer_iterations > max_iterations:
                 #warn("giving up on pathfinding too many iterations")
                 #print("giving up on pathfinding too many iterations; Max Len Path chosen")
                 
-                val = 0
-                rand = np.random.randint(0,5)
-                if rand != 0:
-                    val = return_path(max_len_node)
-                
                 val = return_path(max_len_node)
                 return val
             
-            # Get the current node
-            current_node = min(open_list, key=lambda x:x["f"])
-            open_list.pop(open_list.index(current_node))
+            # Get the current node (lowest f in the open list entries.)
+            open_list.sort(key=lambda d: d['f'])
+            current_node = open_list.pop(0)
             closed_list.append(current_node)
 
             # We're tracking longest failed path for contingency
@@ -153,39 +145,45 @@ class SnekAI:
             for new_position in adjacent_squares: # Adjacent squares
 
                 # Get node position
-                node_position = (current_node["position"][0] + new_position[0], current_node["position"][1] + new_position[1])
+                node_y, node_x = current_node["position"][0] + new_position[0], current_node["position"][1] + new_position[1]
                 
-                """
-                # Make sure within range
-                if node_position[0] > (res_y-1) or node_position[0] < 0 or node_position[1] > (res_x-1) or node_position[1] < 0:
-                    continue
-                """
-                if (node_position[0] not in range(0, res_y)) or (node_position[1] not in range(0, res_x)):
-                    continue
                 #"""
+                # Make sure within range
+                if node_y > (res_y-1) or node_y < 0 or node_x > (res_x-1) or node_x < 0:
+                    continue
 
                 # Make sure walkable terrain
-                if maze[node_position[0]][node_position[1]] == 1:
+                if maze[node_y][node_x] == 1:
                     continue
 
                 # Create new node
-                new_node = node_template.copy()
-                new_node["parent"], new_node["position"] = current_node, node_position
+                new_node= { "parent":current_node,
+                            "position":(node_y, node_x),
+                            "g":0,
+                            "h":0,
+                            "f":0
+                        }
 
                 # Append
                 children.append(new_node)
 
             # Loop through children
             for child in children:
+
                 # Skip if child is on the closed list
                 if len([closed_child for closed_child in closed_list if closed_child["position"] == child["position"]]) > 0:
                     continue
 
                 # Create the f, g, and h values
                 child["g"] = current_node["g"] + 1
-                #child["h"] = ((child["position"][0] - end_node["position"][0]) ** 2) + ((child["position"][1] - end_node["position"][1]) ** 2)
-                #child["h"] = np.sqrt((child["position"][0] - end_node["position"][0]) ** 2) + ((child["position"][1] - end_node["position"][1]) ** 2)
-                child["h"] = 1.1*(abs(child["position"][0] - end_node["position"][0]) + abs(child["position"][1] - end_node["position"][1]))
+                
+                if self.f_mode == 1: #cube
+                    child["h"] = ((child["position"][0] - end_node["position"][0]) ** 2) + ((child["position"][1] - end_node["position"][1]) ** 2)
+                elif self.f_mode == 2: #cube then sqrt
+                    child["h"] = sqrt((child["position"][0] - end_node["position"][0]) ** 2) + ((child["position"][1] - end_node["position"][1]) ** 2)
+                elif self.f_mode == 3: #Manhattan heuristic
+                    child["h"] = 1.1*(abs(child["position"][0] - end_node["position"][0]) + abs(child["position"][1] - end_node["position"][1]))
+                
                 child["f"] = child["g"] + child["h"]
 
                 # Child is already in the open list
