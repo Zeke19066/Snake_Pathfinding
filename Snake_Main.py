@@ -16,7 +16,7 @@ import pygame
 import numpy as np
 import time
 import os
-import Snake_Game_AI as AI
+import Snake_AI
 from collections import deque
 
 from Custom_A_Star import pybind11module as Custom_A_Star
@@ -31,7 +31,7 @@ class SnakeGame():
         self.resolution_width = round(3840/80)
         self.resolution_height = round(2160/80)
         self.pixel_size = 25
-        self.snake_speed = 1000
+        self.snake_speed = 100
         self.final_speed = 0
         self.game_close = False
 
@@ -135,6 +135,7 @@ class SnakeGame():
                 print(f'lose count:{self.lose_count};  food count:{self.food_game_count-1};   total food count:{self.food_total_count-1}')
                 self.food_game_count = 0
                 while self.game_close == True:
+                    
                     if self.ai_control:
                         #time.sleep(1)
                         self.game_close = False
@@ -177,6 +178,17 @@ class SnakeGame():
                 
             #process ai control
             if self.ai_control and (self.cycle!=1):
+                #First process user quit command if preset.
+                for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            terminal_bool = True
+                        if event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_ESCAPE:
+                                print('Exiting Now')
+                                terminal_bool = True
+                                self.game_close = False
+
+                #now run the AI stuff
                 forbidden_path = self.forbidden_builder("Path", player=1)
                 food_bool = self.player_1.snek_step(forbidden_path)
                 dead_count += self.player_1.dead_bool
@@ -274,7 +286,7 @@ class Snek_Actor():
         self.resolution_height = resolution_height
         self.resolution_width = resolution_width
         self.dead_bool = False
-        self.py_ai = AI.SnekAI()
+        self.py_ai = Snake_AI.SnekAI()
 
         self.x1 = np.random.randint(1,self.resolution_width-1)
         self.y1 = np.random.randint(1,self.resolution_height-1)
@@ -303,11 +315,15 @@ class Snek_Actor():
         if forbidden_path == []:
             forbidden_path = [[0,0]]
 
-        #action = Custom_A_Star.launcher(self.resolution_height, self.resolution_width,
-        #                            forbidden_path, self.head, self.food)
+        """
+        action = Custom_A_Star.launcher(self.resolution_height, self.resolution_width,
+                                    forbidden_path, self.head, self.food)
+        """
 
+        #'''
         action =self.py_ai.switchboard(self.resolution_height, self.resolution_width,
                                     forbidden_path, self.head, self.food)
+        #'''
 
         if len(action) > 6:
             #print(f"{self.player_num}  {action}  Head:{self.head}   Food:{self.food}  {forbidden_path}")

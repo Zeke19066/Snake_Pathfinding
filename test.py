@@ -1,7 +1,4 @@
-a = [[0,1],[2,3],[4,5],[6,7]]
+lst = [{'price': 99, 'barcode': '2342355'}, {'price': 88, 'barcode': '2345566'}]
 
-b = [5,6]
-
-a+=[b]
-
-print(a)
+maxPricedItem = max(lst, key=lambda x:x['price'])
+minPricedItem = min(lst, key=lambda x:x['price'])
