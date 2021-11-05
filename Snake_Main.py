@@ -23,13 +23,14 @@ class SnakeGame():
     def __init__(self):
         print('Game Initialized!')
         self.ai_control = True #no human control.
-        self.ai_players = 3 #how many snek?
+        #self.ai_players = 6 #how many snek? (limit 6)
+        self.ai_players = np.random.randint(1,7)#how many snek? (limit 6)
         self.death_count = 0 #how many ded snek?
 
         self.res_x = 48#48
         self.res_y = 27#27
         self.pixel_size = 20
-        self.snake_speed = 6500
+        self.snake_speed = 65
         self.final_speed = 0
         self.game_close = False
 
@@ -46,7 +47,7 @@ class SnakeGame():
         pygame.init()
         self.dis = pygame.display.set_mode((self.res_x*self.pixel_size, self.res_y*self.pixel_size))
         #self.dis = pygame.display.set_mode((self.res_x*self.pixel_size, self.res_y*self.pixel_size), pygame.FULLSCREEN)
-        pygame.display.set_caption('Snake v1')
+        pygame.display.set_caption('Snake v2')
 
         self.screen = pygame.Surface((self.res_x, self.res_y))
         self.clock = pygame.time.Clock()
@@ -57,12 +58,16 @@ class SnakeGame():
             "white": (255, 255, 255),
             "yellow": (255, 240, 31), #(255, 255, 102),
             "orange": (255,165,0),#(255, 200, 50),
+            "purple": (102, 0, 204),
+            "pink": (255, 16, 240),
             "black": (0, 0, 0),
             "soft_red": (213, 50, 80),
             "red":(255,0,0),
             "green": (0, 255, 0),
-            "blue": (50, 153, 213),
+            "soft_blue": (50, 153, 213),
+            "blue": (0,0,255)
             }
+        self.food_color = self.color_dict["soft_red"]
 
    
     def score_generator(self, score):
@@ -75,18 +80,25 @@ class SnakeGame():
 
         for pixel in self.player_1.full_snek:
             pygame.draw.rect(self.screen, self.player_1.color, [pixel[1], pixel[0], 1, 1])
-        
-        if self.ai_players == 2:
+        if self.ai_players > 1:
             for pixel in self.player_2.full_snek:
                 pygame.draw.rect(self.screen, self.player_2.color, [pixel[1], pixel[0], 1, 1])
-        if self.ai_players == 3:
-            for pixel in self.player_2.full_snek:
-                pygame.draw.rect(self.screen, self.player_2.color, [pixel[1], pixel[0], 1, 1])
+        if self.ai_players > 2:
             for pixel in self.player_3.full_snek:
                 pygame.draw.rect(self.screen, self.player_3.color, [pixel[1], pixel[0], 1, 1])
+        if self.ai_players > 3:
+            for pixel in self.player_4.full_snek:
+                pygame.draw.rect(self.screen, self.player_4.color, [pixel[1], pixel[0], 1, 1])
+        if self.ai_players > 4:
+            for pixel in self.player_5.full_snek:
+                pygame.draw.rect(self.screen, self.player_5.color, [pixel[1], pixel[0], 1, 1])
+        if self.ai_players > 5:
+            for pixel in self.player_6.full_snek:
+                pygame.draw.rect(self.screen, self.player_6.color, [pixel[1], pixel[0], 1, 1])
+        
 
         #draw_food
-        pygame.draw.rect(self.screen, self.color_dict["red"], [self.food[1], self.food[0], 1, 1])
+        pygame.draw.rect(self.screen, self.food_color, [self.food[1], self.food[0], 1, 1])
         self.dis.blit(pygame.transform.scale(self.screen, self.dis.get_rect().size), (0, 0))
 
     def message(self, msg, color):
@@ -106,48 +118,70 @@ class SnakeGame():
             self.food = [foody, foodx]
 
         self.player_1.food = self.food
-        if self.ai_players == 2:
+        if self.ai_players > 1:
             self.player_2.food = self.food
-        if self.ai_players == 3:
-            self.player_2.food = self.food
+        if self.ai_players > 2:
             self.player_3.food = self.food
+        if self.ai_players > 3:
+            self.player_4.food = self.food
+        if self.ai_players > 4:
+            self.player_5.food = self.food
+        if self.ai_players > 5:
+            self.player_6.food = self.food           
 
         self.food_game_count += 1
         self.food_total_count += 1
 
-        pygame.draw.rect(self.screen, self.color_dict["red"], [foodx, foody, 1, 1])
+        pygame.draw.rect(self.screen, self.food_color, [foodx, foody, 1, 1])
         self.dis.blit(pygame.transform.scale(self.screen, self.dis.get_rect().size), (0, 0))
         pygame.display.update()
-
 
     def gameLoop(self):
         speed_mod = 0 # Speed adjustments made after the game has started.
         terminal_bool = False
-        
+
+        #"""
+        snake_colors = [self.color_dict["green"],self.color_dict["soft_blue"],self.color_dict["orange"], 
+                    self.color_dict["purple"], self.color_dict["pink"], self.color_dict["yellow"]
+                    ]
         """
-        #modes: 1-Cube; 2-Sqrt; 3-Manhattan Heuristic
-        self.player_1 = Snek_Actor(self.color_dict["green"], 1, self.res_x, self.res_y, 1)
-        if self.ai_players == 2:
-            self.player_2 = Snek_Actor(self.color_dict["blue"], 2, self.res_x, self.res_y, 2)
-        if self.ai_players == 3:
-            self.player_2 = Snek_Actor(self.color_dict["blue"], 2, self.res_x, self.res_y, 2)
-            self.player_3 = Snek_Actor(self.color_dict["orange"], 3, self.res_x, self.res_y, 3)
+        snake_colors = []
+        for _ in range(self.ai_players):
+            color = self.color_generator()
+            snake_colors.append(color)
         """
 
+        """ modes: 1-Cube; 2-Sqrt; 3-Manhattan Heuristic
+        #modes = [1,2,3,1,2,3]
+        #modes = [1,1,1,1,1,1]
+        modes = [2,2,2,2,2,2]
+        #modes = [3,3,3,3,3,3]
+        """
+        modes = []
+        for _ in range(self.ai_players):
+            #only 2 sqrt allowed; too slow. Clunky loops though.
+            rand = np.random.randint(1,4)
+            if modes.count(2) > 1 and rand == 2:
+                while rand == 2:
+                    rand = np.random.randint(1,4)
+            modes.append(rand)
+        #"""
+        print(modes)
+
         #modes: 1-Cube; 2-Sqrt; 3-Manhattan Heuristic
-        color = self.color_generator()
-        self.player_1 = Snek_Actor(color, 1, self.res_x, self.res_y, 1)
-        if self.ai_players == 2:
-            color = self.color_generator()
-            self.player_2 = Snek_Actor(color, 2, self.res_x, self.res_y, 2)
-        if self.ai_players == 3:
-            color = self.color_generator()
-            self.player_2 = Snek_Actor(color, 2, self.res_x, self.res_y, 2)
-            color = self.color_generator()
-            self.player_3 = Snek_Actor(color, 3, self.res_x, self.res_y, 3)
+        self.player_1 = Snek_Actor(snake_colors[0], 1, self.res_x, self.res_y, modes[0])
+        if self.ai_players > 1:
+            self.player_2 = Snek_Actor(snake_colors[1], 2, self.res_x, self.res_y, modes[1])
+        if self.ai_players > 2:
+            self.player_3 = Snek_Actor(snake_colors[2], 3, self.res_x, self.res_y, modes[2])
+        if self.ai_players > 3:
+            self.player_4 = Snek_Actor(snake_colors[3], 3, self.res_x, self.res_y, modes[3])
+        if self.ai_players > 4:
+            self.player_5 = Snek_Actor(snake_colors[4], 3, self.res_x, self.res_y, modes[4])
+        if self.ai_players > 5:
+            self.player_6 = Snek_Actor(snake_colors[5], 3, self.res_x, self.res_y, modes[5])
         
-
-
+        
         self.food_generator() #this is when we request the starting food.
         while not terminal_bool:
             food_bool = False
@@ -225,24 +259,36 @@ class SnakeGame():
                 if food_bool:#trigger the new food condition
                     self.food_generator()  # We generate the next food before updating the screen.
                 
-                if self.ai_players == 2:
+                if self.ai_players > 1:
                     forbidden_path = self.forbidden_builder("Path", player=2)
                     food_bool = self.player_2.snek_step(forbidden_path)
                     dead_count += self.player_1.dead_bool
                     if food_bool:#trigger the new food condition
                         self.food_generator()  # We generate the next food before updating the screen.
-                if self.ai_players == 3:
-                    forbidden_path = self.forbidden_builder("Path", player=2)
-                    food_bool = self.player_2.snek_step(forbidden_path)
-                    dead_count += self.player_2.dead_bool
-                    if food_bool:#trigger the new food condition
-                        self.food_generator()  # We generate the next food before updating the screen.
+                if self.ai_players > 2:
                     forbidden_path = self.forbidden_builder("Path", player=3)
                     food_bool = self.player_3.snek_step(forbidden_path)
                     dead_count += self.player_3.dead_bool
                     if food_bool:#trigger the new food condition
                         self.food_generator()  # We generate the next food before updating the screen.
-
+                if self.ai_players > 3:
+                    forbidden_path = self.forbidden_builder("Path", player=4)
+                    food_bool = self.player_4.snek_step(forbidden_path)
+                    dead_count += self.player_4.dead_bool
+                    if food_bool:#trigger the new food condition
+                        self.food_generator()  # We generate the next food before updating the screen.
+                if self.ai_players > 4:
+                    forbidden_path = self.forbidden_builder("Path", player=5)
+                    food_bool = self.player_5.snek_step(forbidden_path)
+                    dead_count += self.player_5.dead_bool
+                    if food_bool:#trigger the new food condition
+                        self.food_generator()  # We generate the next food before updating the screen.
+                if self.ai_players > 5:
+                    forbidden_path = self.forbidden_builder("Path", player=6)
+                    food_bool = self.player_6.snek_step(forbidden_path)
+                    dead_count += self.player_6.dead_bool
+                    if food_bool:#trigger the new food condition
+                        self.food_generator()  # We generate the next food before updating the screen.
 
             self.snake_plotter()
             if (dead_count == self.ai_players) or (self.food_stale>self.food_stale_limit): #All snek ded or food_stale
@@ -267,12 +313,23 @@ class SnakeGame():
 
         if mode == "Spawn":
             forbidden_list += self.player_1.full_snek
-            if self.ai_players == 2:
+            if self.ai_players > 1:
                 forbidden_list += self.player_2.full_snek
-            if self.ai_players == 3:
-                forbidden_list += self.player_2.full_snek
+            if self.ai_players > 2:
                 forbidden_list += self.player_3.full_snek
             forbidden_list += self.food
+            if self.ai_players > 3:
+                forbidden_list += self.player_4.full_snek
+            forbidden_list += self.food
+            if self.ai_players > 4:
+                forbidden_list += self.player_5.full_snek
+            forbidden_list += self.food
+            if self.ai_players > 5:
+                forbidden_list += self.player_6.full_snek
+            forbidden_list += self.food
+
+
+
 
         elif mode == "Path":
             if player == 1:
@@ -280,22 +337,32 @@ class SnakeGame():
             elif player != 1:
                 forbidden_list += self.player_1.full_snek #full snek
             
-            if self.ai_players == 2:
+            if self.ai_players > 1:
                 if player == 2:
                     forbidden_list += list(self.player_2.body) #just the body
                 elif player != 2:
                     forbidden_list += self.player_2.full_snek #full snek
-            
-            if self.ai_players == 3:
-                if player == 2:
-                    forbidden_list += list(self.player_2.body) #just the body
-                elif player != 2:
-                    forbidden_list += self.player_2.full_snek #full snek
+            if self.ai_players > 2:
                 if player == 3:
                     forbidden_list += list(self.player_3.body) #just the body
                 elif player != 3:
                     forbidden_list += self.player_3.full_snek #full snek
-                        
+            if self.ai_players > 3:
+                if player == 4:
+                    forbidden_list += list(self.player_4.body) #just the body
+                elif player != 4:
+                    forbidden_list += self.player_4.full_snek #full snek
+            if self.ai_players > 4:
+                if player == 5:
+                    forbidden_list += list(self.player_5.body) #just the body
+                elif player != 5:
+                    forbidden_list += self.player_5.full_snek #full snek
+            if self.ai_players > 5:
+                if player == 6:
+                    forbidden_list += list(self.player_6.body) #just the body
+                elif player != 6:
+                    forbidden_list += self.player_6.full_snek #full snek
+
         return forbidden_list
 
     def color_generator(self):
