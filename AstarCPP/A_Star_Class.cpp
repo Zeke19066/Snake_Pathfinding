@@ -51,31 +51,31 @@ private:
 
 	// A Utility Function to check whether destination cell has
 	// been reached or not
-	bool isDestination(int row, int col, Pair dest)
+	bool isDestination(int row, int col, Pair finish)
 	{
-		if (row == dest.first && col == dest.second)
+		if (row == finish.first && col == finish.second)
 			return (true);
 		else
 			return (false);
 	}
 
 	// A Utility Function to calculate the 'h' heuristics.
-	double calculateHValue(int row, int col, Pair dest)
+	double calculateHValue(int row, int col, Pair finish)
 	{
 		// Return using the distance formula
 		return ((double)sqrt(
-			(row - dest.first) * (row - dest.first)
-			+ (col - dest.second) * (col - dest.second)));
+			(row - finish.first) * (row - finish.first)
+			+ (col - finish.second) * (col - finish.second)));
 	}
 
 
 	// A Utility Function to trace the path from the source
 	// to destination
-	string tracePath(vector<vector<cell>> cellDetails, Pair dest)
+	string tracePath(vector<vector<cell>> cellDetails, Pair finish)
 	{
 
-		int row = dest.first;
-		int col = dest.second;
+		int row = finish.first;
+		int col = finish.second;
 		string move;
 
 		stack<Pair> Path;
@@ -89,7 +89,7 @@ private:
 			col = temp_col;
 		}
 
-		/*
+		/* For the complete path
 		Path.push(make_pair(row, col));
 		while (!Path.empty()) {
 			pair<int, int> p = Path.top();
@@ -129,7 +129,7 @@ private:
 	// a given source cell to a destination cell according
 	// to A* Search Algorithm
 public:
-	string aStarSearch(int master_row, int master_col, vector<vector<int>> forbidden_grid, Pair src, Pair dest)
+	string aStarSearch(int master_row, int master_col, vector<vector<int>> forbidden_grid, Pair start, Pair finish)
 	{
 		string move;
 		int longest_length;
@@ -139,27 +139,27 @@ public:
 			longest_cell[i].resize(master_col);
 
 		// If the source is out of range
-		if (isValid(src.first, src.second, master_row, master_col) == false) {
+		if (isValid(start.first, start.second, master_row, master_col) == false) {
 			move = "Source is invalid";
 			return move;
 		}
 
 		// If the destination is out of range
-		if (isValid(dest.first, dest.second, master_row, master_col) == false) {
+		if (isValid(finish.first, finish.second, master_row, master_col) == false) {
 			move = "Destination is invalid";
 			return move;
 		}
 
 		// Either the source or the destination is blocked
-		if (isUnBlocked(forbidden_grid, src.first, src.second) == false
-			|| isUnBlocked(forbidden_grid, dest.first, dest.second)
+		if (isUnBlocked(forbidden_grid, start.first, start.second) == false
+			|| isUnBlocked(forbidden_grid, finish.first, finish.second)
 				== false) {
 			move = "Source or the destination is blocked";
 			return move;
 		}
 
 		// If the destination cell is the same as source cell
-		if (isDestination(src.first, src.second, dest)
+		if (isDestination(start.first, start.second, finish)
 			== true) {
 			move = "We are already at the destination";
 			return move;
@@ -199,7 +199,7 @@ public:
 		}
 
 		// Initialising the parameters of the starting node
-		i = src.first, j = src.second;
+		i = start.first, j = start.second;
 		cellDetails[i][j].f = 0.0;
 		cellDetails[i][j].g = 0.0;
 		cellDetails[i][j].h = 0.0;
@@ -266,11 +266,11 @@ public:
 			if (isValid(i - 1, j, master_row, master_col) == true) {
 				// If the destination cell is the same as the
 				// current successor
-				if (isDestination(i - 1, j, dest) == true) {
+				if (isDestination(i - 1, j, finish) == true) {
 					// Set the Parent of the destination cell
 					cellDetails[i - 1][j].parent_i = i;
 					cellDetails[i - 1][j].parent_j = j;
-					move = tracePath(cellDetails, dest);
+					move = tracePath(cellDetails, finish);
 					foundDest = true;
 					return move;
 				}
@@ -281,7 +281,7 @@ public:
 						&& isUnBlocked(forbidden_grid, i - 1, j)
 								== true) {
 					gNew = cellDetails[i][j].g + 1.0;
-					hNew = calculateHValue(i - 1, j, dest);
+					hNew = calculateHValue(i - 1, j, finish);
 					fNew = gNew + hNew;
 
 					// If it isn’t on the open list, add it to
@@ -313,11 +313,11 @@ public:
 			if (isValid(i + 1, j, master_row, master_col) == true) {
 				// If the destination cell is the same as the
 				// current successor
-				if (isDestination(i + 1, j, dest) == true) {
+				if (isDestination(i + 1, j, finish) == true) {
 					// Set the Parent of the destination cell
 					cellDetails[i + 1][j].parent_i = i;
 					cellDetails[i + 1][j].parent_j = j;
-					move = tracePath(cellDetails, dest);
+					move = tracePath(cellDetails, finish);
 					foundDest = true;
 					return move;
 				}
@@ -328,7 +328,7 @@ public:
 						&& isUnBlocked(forbidden_grid, i + 1, j)
 								== true) {
 					gNew = cellDetails[i][j].g + 1.0;
-					hNew = calculateHValue(i + 1, j, dest);
+					hNew = calculateHValue(i + 1, j, finish);
 					fNew = gNew + hNew;
 
 					// If it isn’t on the open list, add it to
@@ -359,11 +359,11 @@ public:
 			if (isValid(i, j + 1, master_row, master_col) == true) {
 				// If the destination cell is the same as the
 				// current successor
-				if (isDestination(i, j + 1, dest) == true) {
+				if (isDestination(i, j + 1, finish) == true) {
 					// Set the Parent of the destination cell
 					cellDetails[i][j + 1].parent_i = i;
 					cellDetails[i][j + 1].parent_j = j;
-					move = tracePath(cellDetails, dest);
+					move = tracePath(cellDetails, finish);
 					foundDest = true;
 					return move;
 				}
@@ -375,7 +375,7 @@ public:
 						&& isUnBlocked(forbidden_grid, i, j + 1)
 								== true) {
 					gNew = cellDetails[i][j].g + 1.0;
-					hNew = calculateHValue(i, j + 1, dest);
+					hNew = calculateHValue(i, j + 1, finish);
 					fNew = gNew + hNew;
 
 					// If it isn’t on the open list, add it to
@@ -407,11 +407,11 @@ public:
 			if (isValid(i, j - 1, master_row, master_col) == true) {
 				// If the destination cell is the same as the
 				// current successor
-				if (isDestination(i, j - 1, dest) == true) {
+				if (isDestination(i, j - 1, finish) == true) {
 					// Set the Parent of the destination cell
 					cellDetails[i][j - 1].parent_i = i;
 					cellDetails[i][j - 1].parent_j = j;
-					move = tracePath(cellDetails, dest);
+					move = tracePath(cellDetails, finish);
 					foundDest = true;
 					return move;
 				}
@@ -423,7 +423,7 @@ public:
 						&& isUnBlocked(forbidden_grid, i, j - 1)
 								== true) {
 					gNew = cellDetails[i][j].g + 1.0;
-					hNew = calculateHValue(i, j - 1, dest);
+					hNew = calculateHValue(i, j - 1, finish);
 					fNew = gNew + hNew;
 
 					// If it isn’t on the open list, add it to

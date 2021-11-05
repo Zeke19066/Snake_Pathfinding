@@ -106,7 +106,7 @@ class SnekAI:
         #max_iterations = (len(maze[0]) * len(maze) // 2)
         #max_iterations = (len(maze[0]) * len(maze))
         #max_iterations = (len(maze[0]) * len(maze[1]))
-        max_iterations = 20000
+        max_iterations = 100
 
         # what squares do we search
         adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0))
@@ -120,15 +120,16 @@ class SnekAI:
                 print(f"Search Cycle: {outer_iterations}")
 
             #failed to find a path
+
             if outer_iterations > max_iterations:
                 #warn("giving up on pathfinding too many iterations")
                 #print("giving up on pathfinding too many iterations; Max Len Path chosen")
-                """
+                
                 val = 0
                 rand = np.random.randint(0,5)
                 if rand != 0:
                     val = return_path(max_len_node)
-                """
+                
                 val = return_path(max_len_node)
                 return val
             
@@ -156,11 +157,12 @@ class SnekAI:
                 
                 """
                 # Make sure within range
-                if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
+                if node_position[0] > (res_y-1) or node_position[0] < 0 or node_position[1] > (res_x-1) or node_position[1] < 0:
                     continue
                 """
                 if (node_position[0] not in range(0, res_y)) or (node_position[1] not in range(0, res_x)):
                     continue
+                #"""
 
                 # Make sure walkable terrain
                 if maze[node_position[0]][node_position[1]] == 1:
@@ -181,7 +183,9 @@ class SnekAI:
 
                 # Create the f, g, and h values
                 child["g"] = current_node["g"] + 1
-                child["h"] = ((child["position"][0] - end_node["position"][0]) ** 2) + ((child["position"][1] - end_node["position"][1]) ** 2)
+                #child["h"] = ((child["position"][0] - end_node["position"][0]) ** 2) + ((child["position"][1] - end_node["position"][1]) ** 2)
+                #child["h"] = np.sqrt((child["position"][0] - end_node["position"][0]) ** 2) + ((child["position"][1] - end_node["position"][1]) ** 2)
+                child["h"] = 1.1*(abs(child["position"][0] - end_node["position"][0]) + abs(child["position"][1] - end_node["position"][1]))
                 child["f"] = child["g"] + child["h"]
 
                 # Child is already in the open list
@@ -192,6 +196,7 @@ class SnekAI:
                 open_list.append(child)
 
         #warn("Couldn't get a path to destination")
+        print("Couldn't get a path to destination")
         return 0
 
     def move_generator(self, path):

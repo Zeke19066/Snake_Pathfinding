@@ -30,12 +30,13 @@ class SnakeGame():
 
         self.resolution_width = round(3840/80)
         self.resolution_height = round(2160/80)
-        self.pixel_size = 25
-        self.snake_speed = 100
+        self.pixel_size = 20
+        self.snake_speed = 10000
         self.final_speed = 0
         self.game_close = False
 
         self.food = []
+        self.food_stale = 0 #this tracks cycles since food was last changed. If stale, we reset.
         self.food_total_count = 0 #how many foods have we seen total?
         self.food_game_count = 0 #how many foods have we seen before we lost this game?
         self.lose_count = 0 #how many times have we lost?
@@ -78,6 +79,7 @@ class SnakeGame():
 
     def food_generator(self):
         forbidden_spawn = self.forbidden_builder("Spawn")
+        self.food_stale = 0
 
         self.food = forbidden_spawn[0]
         while self.food in forbidden_spawn:
@@ -123,6 +125,7 @@ class SnakeGame():
         while not terminal_bool:
             food_bool = False
             dead_count = 0
+            self.food_stale +=1
 
             # Exit Sequence
             if self.game_close == True:
@@ -225,7 +228,7 @@ class SnakeGame():
                 self.snake_plotter(self.player_2)
                 self.snake_plotter(self.player_3)
 
-            if dead_count == self.ai_players: #All snek ded
+            if (dead_count == self.ai_players) or (self.food_stale>5000): #All snek ded or food_stale
                     time.sleep(3) #bask in the snek
                     self.game_close = True
 
