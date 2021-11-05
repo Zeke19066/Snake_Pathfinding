@@ -19,8 +19,6 @@ import os
 import Snake_AI
 from collections import deque
 
-from Custom_A_Star import pybind11module as Custom_A_Star
-
 class SnakeGame():
     def __init__(self):
         print('Game Initialized!')
@@ -28,15 +26,16 @@ class SnakeGame():
         self.ai_players = 3 #how many snek?
         self.death_count = 0 #how many ded snek?
 
-        self.res_x = round(3840/80) #48
-        self.res_y = round(2160/80) #27
+        self.res_x = 48#48
+        self.res_y = 27#27
         self.pixel_size = 20
-        self.snake_speed = 65
+        self.snake_speed = 6500
         self.final_speed = 0
         self.game_close = False
 
         self.food = []
         self.food_stale = 0 #this tracks cycles since food was last changed. If stale, we reset.
+        self.food_stale_limit = 500 #limit for above; triggers game over
         self.food_total_count = 0 #how many foods have we seen total?
         self.food_game_count = 0 #how many foods have we seen before we lost this game?
         self.lose_count = 0 #how many times have we lost?
@@ -56,9 +55,11 @@ class SnakeGame():
 
         self.color_dict={
             "white": (255, 255, 255),
-            "yellow": (255, 200, 50),#(255, 255, 102),
+            "yellow": (255, 240, 31), #(255, 255, 102),
+            "orange": (255,165,0),#(255, 200, 50),
             "black": (0, 0, 0),
-            "red": (213, 50, 80),
+            "soft_red": (213, 50, 80),
+            "red":(255,0,0),
             "green": (0, 255, 0),
             "blue": (50, 153, 213),
             }
@@ -68,9 +69,25 @@ class SnakeGame():
         value = self.score_font.render("Your Score: " + str(score), True, self.color_dict["white"])
         self.screen.blit(value, [0, 0]) # Draw the score onto the screen at these coordinates.
 
-    def snake_plotter(self, snake_player):
-        for pixel in snake_player.full_snek:
-            pygame.draw.rect(self.screen, snake_player.color, [pixel[1], pixel[0], 1, 1])
+    def snake_plotter(self):
+        #draw snakes and food.
+        self.screen.fill(self.color_dict["black"])
+
+        for pixel in self.player_1.full_snek:
+            pygame.draw.rect(self.screen, self.player_1.color, [pixel[1], pixel[0], 1, 1])
+        
+        if self.ai_players == 2:
+            for pixel in self.player_2.full_snek:
+                pygame.draw.rect(self.screen, self.player_2.color, [pixel[1], pixel[0], 1, 1])
+        if self.ai_players == 3:
+            for pixel in self.player_2.full_snek:
+                pygame.draw.rect(self.screen, self.player_2.color, [pixel[1], pixel[0], 1, 1])
+            for pixel in self.player_3.full_snek:
+                pygame.draw.rect(self.screen, self.player_3.color, [pixel[1], pixel[0], 1, 1])
+
+        #draw_food
+        pygame.draw.rect(self.screen, self.color_dict["red"], [self.food[1], self.food[0], 1, 1])
+        self.dis.blit(pygame.transform.scale(self.screen, self.dis.get_rect().size), (0, 0))
 
     def message(self, msg, color):
         mesg = self.font_style.render(msg, True, color)
@@ -102,27 +119,36 @@ class SnakeGame():
         self.dis.blit(pygame.transform.scale(self.screen, self.dis.get_rect().size), (0, 0))
         pygame.display.update()
 
-        #Call Snake Plotter for every snake.
-        self.snake_plotter(self.player_1)
-        if self.ai_players == 2:
-            self.snake_plotter(self.player_2)
-        if self.ai_players == 3:
-            self.snake_plotter(self.player_2)
-            self.snake_plotter(self.player_3)
 
     def gameLoop(self):
         speed_mod = 0 # Speed adjustments made after the game has started.
         terminal_bool = False
+        
+        """
         #modes: 1-Cube; 2-Sqrt; 3-Manhattan Heuristic
         self.player_1 = Snek_Actor(self.color_dict["green"], 1, self.res_x, self.res_y, 1)
         if self.ai_players == 2:
             self.player_2 = Snek_Actor(self.color_dict["blue"], 2, self.res_x, self.res_y, 2)
         if self.ai_players == 3:
             self.player_2 = Snek_Actor(self.color_dict["blue"], 2, self.res_x, self.res_y, 2)
-            self.player_3 = Snek_Actor(self.color_dict["yellow"], 3, self.res_x, self.res_y, 3)
+            self.player_3 = Snek_Actor(self.color_dict["orange"], 3, self.res_x, self.res_y, 3)
+        """
+
+        #modes: 1-Cube; 2-Sqrt; 3-Manhattan Heuristic
+        color = self.color_generator()
+        self.player_1 = Snek_Actor(color, 1, self.res_x, self.res_y, 1)
+        if self.ai_players == 2:
+            color = self.color_generator()
+            self.player_2 = Snek_Actor(color, 2, self.res_x, self.res_y, 2)
+        if self.ai_players == 3:
+            color = self.color_generator()
+            self.player_2 = Snek_Actor(color, 2, self.res_x, self.res_y, 2)
+            color = self.color_generator()
+            self.player_3 = Snek_Actor(color, 3, self.res_x, self.res_y, 3)
+        
+
+
         self.food_generator() #this is when we request the starting food.
-
-
         while not terminal_bool:
             food_bool = False
             dead_count = 0
@@ -218,18 +244,8 @@ class SnakeGame():
                         self.food_generator()  # We generate the next food before updating the screen.
 
 
-            self.screen.fill(self.color_dict["black"])
-            pygame.draw.rect(self.screen, self.color_dict["red"], [self.food[1], self.food[0], 1, 1])
-            
-            #Call Snake Plotter for every snake.
-            self.snake_plotter(self.player_1)
-            if self.ai_players == 2:
-                self.snake_plotter(self.player_2)
-            if self.ai_players == 3:
-                self.snake_plotter(self.player_2)
-                self.snake_plotter(self.player_3)
-
-            if (dead_count == self.ai_players) or (self.food_stale>1000): #All snek ded or food_stale
+            self.snake_plotter()
+            if (dead_count == self.ai_players) or (self.food_stale>self.food_stale_limit): #All snek ded or food_stale
                     time.sleep(3) #bask in the snek
                     self.game_close = True
 
@@ -281,6 +297,10 @@ class SnakeGame():
                     forbidden_list += self.player_3.full_snek #full snek
                         
         return forbidden_list
+
+    def color_generator(self):
+        return (np.random.randint(0,256),np.random.randint(0,256),np.random.randint(0,256))
+
 
 class Snek_Actor():
     def __init__(self, color, player_num, res_x, res_y, ai_mode):
@@ -394,6 +414,7 @@ class Snek_Actor():
         self.last_action = action
 
         return food_bool
+
 
 def main():
     snek = SnakeGame()
