@@ -24,8 +24,8 @@ class SnakeGame():
     def __init__(self):
         print('Game Initialized!')
         self.ai_control = True #no human control.
-        #self.ai_players = 6 #how many snek? (limit 6)
-        self.ai_players = np.random.randint(1,7)#how many snek? (limit 6)
+        self.ai_players = 6 #how many snek? (limit 6)' overwritten by random.
+        self.random_mode = True
         self.death_count = 0 #how many ded snek?
 
         self.res_x = 48#48
@@ -141,6 +141,7 @@ class SnakeGame():
         speed_mod = 0 # Speed adjustments made after the game has started.
         terminal_bool = False
 
+        self.ai_players = np.random.randint(1,7)#how many snek? (limit 6)
         #"""
         snake_colors = [self.color_dict["green"],self.color_dict["soft_blue"],self.color_dict["orange"], 
                     self.color_dict["purple"], self.color_dict["pink"], self.color_dict["yellow"]
