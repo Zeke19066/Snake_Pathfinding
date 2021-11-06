@@ -16,6 +16,7 @@ import pygame
 import numpy as np
 import time
 import os
+#import Snake_AI_copy as Snake_AI
 import Snake_AI
 import random
 from collections import deque
@@ -25,13 +26,13 @@ class SnakeGame():
         print('Game Initialized!')
         self.ai_control = True #no human control.
         self.ai_players = 6 #how many snek? (limit 6)' overwritten by random.
-        self.random_mode = True
+        self.random_mode = False
         self.death_count = 0 #how many ded snek?
 
         self.res_x = 48#48
         self.res_y = 27#27
         self.pixel_size = 20
-        self.snake_speed = 65
+        self.snake_speed = 650
         self.final_speed = 0
         self.game_close = False
 
@@ -140,36 +141,36 @@ class SnakeGame():
     def gameLoop(self):
         speed_mod = 0 # Speed adjustments made after the game has started.
         terminal_bool = False
-
-        self.ai_players = np.random.randint(1,7)#how many snek? (limit 6)
-        #"""
         snake_colors = [self.color_dict["green"],self.color_dict["soft_blue"],self.color_dict["orange"], 
-                    self.color_dict["purple"], self.color_dict["pink"], self.color_dict["yellow"]
-                    ]
-        random.shuffle(snake_colors)
-        """
-        snake_colors = []
-        for _ in range(self.ai_players):
-            color = self.color_generator()
-            snake_colors.append(color)
-        """
+            self.color_dict["purple"], self.color_dict["pink"], self.color_dict["yellow"]
+            ]
 
-        """ modes: 1-Cube; 2-Sqrt; 3-Manhattan Heuristic
-        #modes = [1,2,3,1,2,3]
+        #modes: 1-Cube; 2-Sqrt; 3-Manhattan Heuristic
+        modes = [1,2,3,1,2,3]
         #modes = [1,1,1,1,1,1]
-        modes = [2,2,2,2,2,2]
+        #modes = [2,2,2,2,2,2]
         #modes = [3,3,3,3,3,3]
-        """
-        modes = []
-        for _ in range(self.ai_players):
-            #only 2 sqrt allowed; too slow. Clunky loops though.
-            rand = np.random.randint(1,4)
-            if modes.count(2) > 1 and rand == 2:
-                while rand == 2:
-                    rand = np.random.randint(1,4)
-            modes.append(rand)
-        #"""
-        print(modes)
+        
+
+
+        if self.random_mode:
+            self.ai_players = np.random.randint(1,7)#how many snek? (limit 6)
+
+            random.shuffle(snake_colors)
+            """
+            snake_colors = []
+            for _ in range(self.ai_players):
+                color = self.color_generator()
+                snake_colors.append(color)
+            """
+            modes = []
+            for _ in range(self.ai_players):
+                #only 2 sqrt allowed; too slow. Clunky loops though.
+                rand = np.random.randint(1,4)
+                if modes.count(2) > 1 and rand == 2:
+                    while rand == 2:
+                        rand = np.random.randint(1,4)
+                modes.append(rand)
 
         #modes: 1-Cube; 2-Sqrt; 3-Manhattan Heuristic
         self.player_1 = Snek_Actor(snake_colors[0], 1, self.res_x, self.res_y, modes[0])
