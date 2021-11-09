@@ -18,7 +18,6 @@ import time
 import os
 #import Snake_AI_Node as Snake_AI
 import Snake_AI
-import Gifmaker
 import random
 from collections import deque
 
@@ -71,10 +70,7 @@ class SnakeGame():
             "blue": (0,0,255)
             }
         self.food_color = self.color_dict["soft_red"]
-        self.gif = Gifmaker.Capture()
 
-
-   
     def score_generator(self, score):
         value = self.score_font.render("Your Score: " + str(score), True, self.color_dict["white"])
         self.screen.blit(value, [0, 0]) # Draw the score onto the screen at these coordinates.
@@ -296,14 +292,7 @@ class SnakeGame():
                         self.food_generator()  # We generate the next food before updating the screen.
 
             self.snake_plotter()
-
-            frame = pygame.surfarray.array3d(self.dis)
-            self.gif.snap_maker(frame)
-
             if (dead_count == self.ai_players) or (self.food_stale>self.food_stale_limit): #All snek ded or food_stale
-                    
-                    self.gif.gif_maker()
-                    
                     time.sleep(3) #bask in the snek
                     self.game_close = True
 
