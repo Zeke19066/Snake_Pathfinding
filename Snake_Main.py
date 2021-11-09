@@ -16,8 +16,9 @@ import pygame
 import numpy as np
 import time
 import os
-#import Snake_AI_copy as Snake_AI
+#import Snake_AI_Node as Snake_AI
 import Snake_AI
+import Gifmaker
 import random
 from collections import deque
 
@@ -26,12 +27,12 @@ class SnakeGame():
         print('Game Initialized!')
         self.ai_control = True #no human control.
         self.ai_players = 6 #how many snek? (limit 6)' overwritten by random.
-        self.random_mode = False
+        self.random_mode = True
         self.death_count = 0 #how many ded snek?
 
-        self.res_x = 48#48
-        self.res_y = 27#27
-        self.pixel_size = 20
+        self.res_x = 30#48
+        self.res_y = 30#27
+        self.pixel_size = 8
         self.snake_speed = 650
         self.final_speed = 0
         self.game_close = False
@@ -70,6 +71,8 @@ class SnakeGame():
             "blue": (0,0,255)
             }
         self.food_color = self.color_dict["soft_red"]
+        self.gif = Gifmaker.Capture()
+
 
    
     def score_generator(self, score):
@@ -146,13 +149,11 @@ class SnakeGame():
             ]
 
         #modes: 1-Cube; 2-Sqrt; 3-Manhattan Heuristic
-        modes = [1,2,3,1,2,3]
+        #modes = [1,2,3,1,2,3]
         #modes = [1,1,1,1,1,1]
         #modes = [2,2,2,2,2,2]
         #modes = [3,3,3,3,3,3]
         
-
-
         if self.random_mode:
             self.ai_players = np.random.randint(1,7)#how many snek? (limit 6)
 
@@ -295,7 +296,14 @@ class SnakeGame():
                         self.food_generator()  # We generate the next food before updating the screen.
 
             self.snake_plotter()
+
+            frame = pygame.surfarray.array3d(self.dis)
+            self.gif.snap_maker(frame)
+
             if (dead_count == self.ai_players) or (self.food_stale>self.food_stale_limit): #All snek ded or food_stale
+                    
+                    self.gif.gif_maker()
+                    
                     time.sleep(3) #bask in the snek
                     self.game_close = True
 
@@ -331,9 +339,6 @@ class SnakeGame():
             if self.ai_players > 5:
                 forbidden_list += self.player_6.full_snek
             forbidden_list += self.food
-
-
-
 
         elif mode == "Path":
             if player == 1:
@@ -380,6 +385,7 @@ class Snek_Actor():
         self.res_y = res_y
         self.res_x = res_x
         self.dead_bool = False
+        self.ai_mode = ai_mode
         self.py_ai = Snake_AI.SnekAI(f_mode=ai_mode)
 
         self.x1 = np.random.randint(1,self.res_x-1)
@@ -415,6 +421,7 @@ class Snek_Actor():
         """
 
         #'''
+        #print(self.ai_mode)
         action =self.py_ai.switchboard(self.res_y, self.res_x,
                                     forbidden_path, self.head, self.food)
         #'''

@@ -1,10 +1,17 @@
-people = [
-{'name': "Tom", 'age': 10},
-{'name': "Mark", 'age': 5},
-{'name': "Pam", 'age': 7}
-]
+from math import sqrt, isqrt
+from decorators import function_timer
 
-b = list(filter(lambda person: person['name'] == 'Pam', people))
+num = 21**2
 
-if b != []:
-    print(b)
+@function_timer
+def func_1(num):
+    for n in range(100000000):
+        n1 = sqrt(num)
+
+@function_timer
+def func_2(num):
+    for n in range(100000000):
+        n1 = isqrt(num)
+
+func_2(num)
+func_1(num)
